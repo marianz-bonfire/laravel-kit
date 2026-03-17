@@ -86,13 +86,10 @@ export const store = createStore<State>({
           context.dispatch("closeProject");
         }
         context.state.opening = true;
-        const result = await window.kit.openProject({ 
-          type: "LocalFolder", 
+        const result = await window.kit.openProject({
+          type: "LocalFolder",
           dir: payload.dir,
-          php: context.state.php,
-          docker: {
-            enabled: false
-          }
+          php: context.state.php
         });
         if (result.success) {
           context.state.dir = payload.dir;
@@ -132,7 +129,7 @@ export const store = createStore<State>({
         }
         if (state.php !== "" && state.dir != null) {
           state.tinkering = true;
-          state.output = await window.kit.tinker(state.dir, state.code);
+          state.output = await window.kit.tinker(state.code);
           state.tinkering = false;
         } else {
           window.kit.dialogPhpNotFound();
@@ -140,8 +137,8 @@ export const store = createStore<State>({
       }
     },
     async startServe({ state }) {
-      if (state.dir != null) {
-        state.serve = await window.kit.startServe(state.dir);
+      if (state.project != null) {
+        state.serve = await window.kit.startServe();
       }
     },
     async stopServe({ state }) {

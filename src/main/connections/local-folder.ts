@@ -1,28 +1,11 @@
 import { execa } from "execa";
 import { BrowserWindow, dialog } from "electron";
 import { basename, join } from "path";
-import { store } from "./store.js";
-import { ConnectionFactoryOptions, ConnectionOpenProjectResponse } from "../shared/types.js";
+import { ConnectionOpenProjectResponse } from "../../shared/types.js";
 import { spawn } from "child_process";
+import { Connection } from "./connection.js";
 
-interface Connection {
-  openProject(): Promise<ConnectionOpenProjectResponse>;
-  artisan(fullCommand: string): Promise<string>;
-  startServe(): number | undefined;
-  tinker(code: string): Promise<string>;
-  phpExecutable(): string;
-  // addToRecents(): void;
-}
-
-function connectionFactory(factoryOptions: ConnectionFactoryOptions): Connection {
-  if (factoryOptions.type == "LocalFolder") {
-    return new LocalFolder(factoryOptions.dir, factoryOptions.php);
-  } else {
-    return new LocalFolder(factoryOptions.dir, factoryOptions.php);
-  }
-}
-
-class LocalFolder implements Connection {
+export class LocalFolder implements Connection {
   dir: string;
   php: string;
 
@@ -31,13 +14,9 @@ class LocalFolder implements Connection {
     this.php = php;
   }
 
-  phpExecutable(): string {
-    return this.php;
-  }
-
   async openProject(): Promise<ConnectionOpenProjectResponse> {
     try {
-      const { all } = await execa(this.phpExecutable(), ["artisan", "--format=json"], { cwd: this.dir, all: true, buffer: true });
+      const { all } = await execa(this.php, ["artisan", "--format=json"], { cwd: this.dir, all: true, buffer: true });
       if (all?.includes("Laravel")) {
         return { success: true, output: all, basename: basename(this.dir) };
       } else {
@@ -64,7 +43,7 @@ class LocalFolder implements Connection {
 
   async artisan(fullCommand: string): Promise<string> {
     try {
-      const { all } = await execa(this.phpExecutable(), ["artisan", ...fullCommand, "--no-interaction", "--ansi"], { cwd: this.dir, all: true, buffer: true });
+      const { all } = await execa(this.php, ["artisan", ...fullCommand, "--no-interaction", "--ansi"], { cwd: this.dir, all: true, buffer: true });
       return all ?? "";
     } catch (e: any) {
       console.log(`Error executing artisan command in ${this.dir}: ${fullCommand}`);
@@ -74,9 +53,10 @@ class LocalFolder implements Connection {
   }
 
   startServe(): number | undefined {
-    const serve = spawn(this.phpExecutable(), ["artisan", "serve"], { cwd: this.dir });
+    const serve = spawn(this.php, ["artisan", "serve"], { cwd: this.dir });
+    serve.stdout.setEncoding("utf-8");
     serve.stdout.on("data", (data) => {
-      if (data.includes("started")) {
+      if (data.includes("started") || data.includes("running")) {
         BrowserWindow.getAllWindows()[0].webContents.send("updateServeLink", data.toString().match(/(https?:\/\/[a-zA-Z0-9.]+(:[0-9]+)?)/g)[0]);
       }
     });
@@ -85,7 +65,7 @@ class LocalFolder implements Connection {
 
   async tinker(code: string): Promise<string> {
     try {
-      const { stdout } = await execa(this.phpExecutable(), [join(__dirname, "tinker.php"), this.dir, code]);
+      const { stdout } = await execa(this.php, [join(__dirname, "tinker.php"), this.dir, code]);
       return stdout;
     } catch (e) {
       console.error(e);
@@ -93,5 +73,3 @@ class LocalFolder implements Connection {
     }
   }
 }
-
-export { connectionFactory };
