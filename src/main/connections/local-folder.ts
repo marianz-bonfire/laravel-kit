@@ -54,9 +54,8 @@ export class LocalFolder implements Connection {
 
   startServe(): number | undefined {
     const serve = spawn(this.php, ["artisan", "serve"], { cwd: this.dir });
-    serve.stdout.setEncoding("utf-8");
     serve.stdout.on("data", (data) => {
-      if (data.includes("started") || data.includes("running")) {
+      if (data.includes("started")) {
         BrowserWindow.getAllWindows()[0].webContents.send("updateServeLink", data.toString().match(/(https?:\/\/[a-zA-Z0-9.]+(:[0-9]+)?)/g)[0]);
       }
     });
