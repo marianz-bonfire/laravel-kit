@@ -8,19 +8,13 @@ type ConnectionOpenProjectResponse =
     }
   | { success: false };
 
-type ConnectionFactoryOptions = {
+type LocalFolderConnectionOptions = {
     type: "LocalFolder";
     dir: string;
     php: string;
-    docker:
-    | {
-        enabled: true;
-        workingDir: string;
-        containerName: string;
-        php: string;
-      }
-    | { enabled: false; };
   };
+
+type ConnectionFactoryOptions = LocalFolderConnectionOptions;
 
 declare global {
   interface Window {
@@ -40,10 +34,10 @@ declare global {
     choosePhpExecutable(): Promise<void>;
     getPhpVersion(): Promise<string>;
     buildMenu(isProject: boolean): void;
-    tinker(dir: string, code: string): Promise<string>;
-    artisan(fullCommand: string, dir: string): Promise<string>;
-    openProject(dir: ConnectionFactoryOptions): Promise<ConnectionOpenProjectResponse>;
-    startServe(dir: string): Promise<number>;
+    tinker(code: string): Promise<string>;
+    artisan(fullCommand: string): Promise<string>;
+    openProject(options: ConnectionFactoryOptions): Promise<ConnectionOpenProjectResponse>;
+    startServe(): Promise<number>;
     killSync(serve: number): void;
   }
 
@@ -53,4 +47,4 @@ declare global {
   }
 }
 
-export { ConnectionOpenProjectResponse, ConnectionFactoryOptions };
+export { ConnectionOpenProjectResponse, ConnectionFactoryOptions, LocalFolderConnectionOptions };

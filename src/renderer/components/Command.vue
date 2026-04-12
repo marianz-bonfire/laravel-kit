@@ -117,7 +117,7 @@ export default {
       if (this.$store.state.php !== "") {
         this.output = "Running...";
         this.$store.state.running = true;
-        const stdout = await window.kit.artisan(this.artisanArray, this.$store.state.dir);
+        const stdout = await window.kit.artisan(this.artisanArray);
         this.output = Anser.ansiToHtml(Anser.escapeForHtml(stdout.trim()), { use_classes: true });
         this.$refs["terminal-end"].scrollIntoView();
         this.$store.state.running = false;

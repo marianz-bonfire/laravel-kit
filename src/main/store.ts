@@ -4,14 +4,8 @@ type ProjectType = {
   type: "LocalFolder";
   dir: string;
   php: string;
-  docker: {
-    enabled: boolean;
-    workingDir: string;
-    containerName: string;
-    php: string;
-  }
 } | {
-  type: "SSH",
+  type: "SSH";
   host: string;
   username: string;
   password: string;

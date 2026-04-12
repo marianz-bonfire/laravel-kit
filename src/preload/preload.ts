@@ -97,23 +97,23 @@ function buildMenu(isProject: boolean) {
   ipcRenderer.send("buildMenu", isProject);
 }
 
-async function tinker(dir: string, code: string) {
-  const output = await ipcRenderer.invoke("tinker", { dir, code });
+async function tinker(code: string) {
+  const output = await ipcRenderer.invoke("tinker", { code });
   return output;
 }
 
-async function artisan(fullCommand: string, dir: string) {
-  const output = await ipcRenderer.invoke("artisan", { fullCommand, dir });
+async function artisan(fullCommand: string) {
+  const output = await ipcRenderer.invoke("artisan", { fullCommand });
   return output;
 }
 
-async function openProject(dir: ConnectionFactoryOptions) {
-  const output = await ipcRenderer.invoke("openProject", dir);
+async function openProject(options: ConnectionFactoryOptions) {
+  const output = await ipcRenderer.invoke("openProject", options);
   return output;
 }
 
-async function startServe(dir: string) {
-  const serve = await ipcRenderer.invoke("startServe", dir);
+async function startServe() {
+  const serve = await ipcRenderer.invoke("startServe");
   return serve;
 }
 

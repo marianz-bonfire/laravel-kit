@@ -1,12 +1,20 @@
-import { exec, spawn } from "child_process";
-import { ipcMain, dialog, shell, BrowserWindow } from "electron";
+import { exec } from "child_process";
+import { ipcMain, dialog, shell } from "electron";
 import kill from "tree-kill";
 import which from "which";
 import { execa } from "execa";
-import { join, basename } from "path";
 import killSync from "./tree-kill-sync.js";
 import { store } from "./store.js";
-import { connectionFactory } from "./connection.js";
+import { connectionFactory, Connection } from "./connections/index.js";
+
+let activeConnection: Connection | null = null;
+
+function getActiveConnection(): Connection {
+  if (!activeConnection) {
+    throw new Error("No active connection. Open a project first.");
+  }
+  return activeConnection;
+}
 
 export default async function () {
   ipcMain.on("killSync", (e, pid) => {
@@ -67,41 +75,21 @@ export default async function () {
     return store.set(key, value);
   });
 
-  ipcMain.handle("tinker", async (e, { dir, code }) => {
-    try {
-      const { stdout } = await execa(store.get("php"), [join(__dirname, "tinker.php"), dir, code]);
-      return stdout;
-    } catch (e) {
-      console.error(e);
-      return e;
-    }
-  });
-
-  ipcMain.handle("artisan", async (e, { fullCommand, dir }) => {
-    try {
-      const { all } = await execa(store.get("php"), ["artisan", ...fullCommand, "--no-interaction", "--ansi"], { cwd: dir, all: true, buffer: true });
-      return all;
-    } catch (e: any) {
-      console.log(`Error executing artisan command in ${dir}: ${fullCommand}`);
-      console.error(e);
-      return e.all; // e has all property when Options.all == true
-    }
-  });
-
   ipcMain.handle("openProject", async (e, factoryOptions) => {
-    let connection = connectionFactory(factoryOptions);
-    return await connection.openProject();
+    activeConnection = connectionFactory(factoryOptions);
+    return await activeConnection.openProject();
   });
 
-  ipcMain.handle("startServe", (e, dir) => {
-    const serve = spawn(store.get("php"), ["artisan", "serve"], { cwd: dir });
-    serve.stdout.setEncoding("utf-8");
-    serve.stdout.on("data", (data) => {
-      if (data.includes("started") || data.includes("running")) {
-        BrowserWindow.getAllWindows()[0].webContents.send("updateServeLink", data.toString().match(/(https?:\/\/[a-zA-Z0-9.]+(:[0-9]+)?)/g)[0]);
-      }
-    });
-    return serve.pid;
+  ipcMain.handle("artisan", async (e, { fullCommand }) => {
+    return await getActiveConnection().artisan(fullCommand);
+  });
+
+  ipcMain.handle("tinker", async (e, { code }) => {
+    return await getActiveConnection().tinker(code);
+  });
+
+  ipcMain.handle("startServe", () => {
+    return getActiveConnection().startServe();
   });
 
   if (store.get("php") === "") {
